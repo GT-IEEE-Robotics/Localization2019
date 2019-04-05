@@ -24,7 +24,8 @@ def random_square(side_len, delta):
     s3, s4 = random_error(draw_line(c2, c3), delta), random_error(draw_line(c2, c4), delta)
 
     #converts to real parts
-    return real_tuples(s1+s2+s3+s4)
+    square = real_tuples(s1+s2+s3+s4)
+    return [(point[0], point[1], 'lidar') for point in square]
 
 
 # much like random_square(), but a rectangle
