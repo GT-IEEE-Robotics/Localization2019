@@ -12,11 +12,13 @@ def cartesianConvert(polarCord):
 
 def getDist(pt1, pt2):
     out = math.sqrt(math.pow(pt2[0] - pt1[0], 2) + math.pow(pt2[1] - pt1[1], 2))
-    # print(out)
     return out
 
 
-def drawSquare(pt1, pt2):       #https://www.quora.com/Given-two-diagonally-opposite-points-of-a-square-how-can-I-find-out-the-other-two-points-in-terms-of-the-coordinates-of-the-known-points
+def drawSquare(pt1, pt2):
+    """
+    https://www.quora.com/Given-two-diagonally-opposite-points-of-a-square-how-can-I-find-out-the-other-two-points-in-terms-of-the-coordinates-of-the-known-points
+    """
     A = pt1
     C = pt2
     B = ((A[0] + C[0] + A[1] - C[1]) / 2, (C[0] - A[0] + A[1] + C[1]) / 2)
@@ -158,15 +160,36 @@ def main():
 
     print(ransacSquare(lidar_coords, 100, .07, .8, 100000))
         
+def readLidarImage():
+    with open("lidar_dataset/image1.txt") as f:
+        content = f.readlines();
 
+    lidar_points = []
+    for line in content:
+        line_data = line.split()
+        quality = int(line_data[1])
+        angle = float(line_data[2])
+        distance = float(line_data[3])
 
+        if (quality > 0):
+            lidar_points.append((angle, distance))
 
-# getDist((1,0), (1,1))
-# drawSquare((0,0), (1,2))
-# print(ptOnLine((0,0), (-1,2), (-0.6,1), .05))
-# print("-------")
-# print(ptOnLine((0,0), (0,1.000000001), (0, 4), .05))# does not check initial y ranges properly
-# main()
-# print(len(random_square(100, 5)))
-print(ransacSquare(random_square(100, 1), 100, .025, .95, 100000))
+    return lidar_points
+
+DMAX = 4000
+IMIN = 0
+IMAX = 50
+
+if __name__ == "__main__":
+    lidar_pts = readLidarImage()
+    
+    fig = plt.figure()
+    ax = plt.subplot(111, projection='polar')
+    line = ax.scatter([point[0] for point in lidar_pts], [point[1] for point in lidar_pts], s=5,
+                           cmap=plt.cm.Greys_r, lw=0)
+    ax.set_rmax(DMAX)
+    ax.grid(True)
+
+    plt.show()
+    # print(ransacSquare(random_square(100, 1), 100, .025, .95, 100000))
 
