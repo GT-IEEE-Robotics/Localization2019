@@ -93,13 +93,13 @@ def pPtOnLine(cPt1, cPt2, pPtCheck, error_dist):
         return 0
 
 
-def ransac(lidar_points=None, color_sensor_pts=None, landmark_pts=None, impact_pts=None, error=0.15, sideLength=SQUARE_SIDE_LENGTH, percentOfPoints=.95, numIterations=100000):
+def ransac(lidar_points=None, color_sensor_pts=None, landmark_pts=None, impact_pts=None, error=0.05, sideLength=SQUARE_SIDE_LENGTH, percentOfPoints=.95, numIterations=100000):
     # landmark_pts = [(x, y, "camera", "pillar" or "internal wall" or "spacetels", color, how sure are that we saw it there)]
     # color_sensors_pts = [("colorsensr", color, weighting)]
     # impac_pts = ["impact_sensors"]
     
     iteration = 0
-    random.seed(15)
+    random.seed(10)
     while iteration < numIterations:
         iteration += 1
 
@@ -148,6 +148,7 @@ def ransac(lidar_points=None, color_sensor_pts=None, landmark_pts=None, impact_p
             # side = getDist(cPt1, cPt2)
             error_dist = sideLength * error
             score = 0
+            maxCurrScore = 0
 
             plt.plot(0,0,marker ='o', markersize=5, color="black")
             # print(len(lidar_points))
@@ -190,6 +191,11 @@ def ransac(lidar_points=None, color_sensor_pts=None, landmark_pts=None, impact_p
                     plt.plot((verts[0][0], verts[1][0], verts[2][0], verts[3][0], verts[0][0]), (verts[0][1], verts[1][1], verts[2][1], verts[3][1], verts[0][1]), color="blue")
                     plt.show()
                     return verts
+
+                maxCurrScore += point[2]
+
+                if maxCurrScore - score > (1 - percentOfPoints) * totalPointsPossible:
+                    break
             # plt.plot((verts[0][0], verts[1][0], verts[2][0], verts[3][0], verts[0][0]), (verts[0][1], verts[1][1], verts[2][1], verts[3][1], verts[0][1]), color="blue")
             # plt.show()
             # print(score)
