@@ -9,7 +9,7 @@ color_sensor_pts = []
 """
 
 
-SQUARE_SIDE_LENGTH = 2750
+SQUARE_SIDE_LENGTH = 2740
 THRESHOLD = 0.07
 ACCEPTABLE_PERCENTAGE = 0.9
 ITERATIONS = 100000
@@ -17,7 +17,7 @@ ITERATIONS = 100000
 
 def readLidarImage():
     with open("lidar_dataset/image1.txt") as f:
-        content = f.readlines();
+        content = f.readlines()
 
     lidar_points = []
     for line in content:
@@ -54,6 +54,28 @@ def cartesianConvert(polarPt):
 def getDist(pt1, pt2):
     return math.sqrt(math.pow(pt2[0] - pt1[0], 2) + math.pow(pt2[1] - pt1[1], 2))
 
+def angleInRange(ang1, ang2, angCheck):
+    angle = ((ang2 - ang1) + 360) % 360
+    if angle >= 180:
+        ang1,ang2 = ang2,ang1
+    if ang1 <= ang2:
+        return angCheck >= ang1 and angCheck <= ang2
+    else:
+        return angCheck >= ang1 or angCheck <= ang2
+
+def getAngle(pt):
+    if pt[0] == 0:
+        pt[0] = 0.0000000001
+    angle = math.degrees(math.atan(abs(pt[1] / pt[0])))
+    if pt[0] < 0 and pt[1] >= 0:        #quadrant 2
+        return 180 - angle
+    elif pt[0] < 0 and pt[1] < 0:       #quadrant 3
+        return 180 + angle
+    elif pt[0] > 0 and pt[1] < 0:       #quadrant 4
+        return 360 - angle
+    else:
+        return angle                    #quadrant 1
+
 
 def pPtOnLine(cPt1, cPt2, pPtCheck, error_dist):
     if cPt2[0] - cPt1[0] != 0:
@@ -64,22 +86,14 @@ def pPtOnLine(cPt1, cPt2, pPtCheck, error_dist):
     b = cPt1[1] - m * cPt1[0]
     # print(b)
     r = b / (math.sin(math.radians(pPtCheck[0])) - m * math.cos(math.radians(pPtCheck[0])))
-    # print(pPtCheck[0])
-    # print(r)
-    # if r < 0:
-    #     print("r is less than zero")
-    #     print(r)
-    #     print(cPt1)
-    #     print(cPt2)
-    #     print(pPtCheck)
-
+    
     if  r - error_dist <= pPtCheck[1] <= r + error_dist:
         return 1
     else:
         return 0
 
 
-def ransac(lidar_points=None, color_sensor_pts=None, landmark_pts=None, impact_pts=None, error=0.05, sideLength=SQUARE_SIDE_LENGTH, percentOfPoints=.9, numIterations=10000):
+def ransac(lidar_points=None, color_sensor_pts=None, landmark_pts=None, impact_pts=None, error=0.15, sideLength=SQUARE_SIDE_LENGTH, percentOfPoints=.95, numIterations=100000):
     # landmark_pts = [(x, y, "camera", "pillar" or "internal wall" or "spacetels", color, how sure are that we saw it there)]
     # color_sensors_pts = [("colorsensr", color, weighting)]
     # impac_pts = ["impact_sensors"]
@@ -94,16 +108,20 @@ def ransac(lidar_points=None, color_sensor_pts=None, landmark_pts=None, impact_p
 
         cPt1 = cartesianConvert(pPt1)
         cPt2 = cartesianConvert(pPt2)
-        # print(pPt1)
-        # print(pPt2)
-        # print(cPt1)
-        # print(cPt2)
 
-        totalPointsPossible = len(lidar_points) * 15
-        # print(totalPointsPossible)
-        #don't bother checking points that are right next to each other and wont form a big enough square
-        # print(getDist(cPt1, cPt2))
-        if sideLength * (1 - error) * math.sqrt(2) <= getDist(cPt1, cPt2) <= sideLength * (1 + error) * math.sqrt(2):
+        if getDist(cPt1, cPt2) > 1500:
+
+            vecx = sideLength * math.sqrt(2) * (cPt2[0] - cPt1[0]) / getDist(cPt1, cPt2)
+            vecy = sideLength * math.sqrt(2) * (cPt2[1] - cPt1[1]) / getDist(cPt1, cPt2)
+
+            cPt2 = (vecx + cPt1[0], vecy + cPt1[1])
+            # print(pPt1)
+            # print(pPt2)
+            # print(cPt1)
+            # print(cPt2)
+
+            totalPointsPossible = len(lidar_points) * 15
+            # print(totalPointsPossible)\
             verts = drawSquare(cPt1, cPt2)
             # print(verts)
 
@@ -117,19 +135,9 @@ def ransac(lidar_points=None, color_sensor_pts=None, landmark_pts=None, impact_p
 
             #finding angle of all the verticies
             thetaA = pPt1[0]
-            if verts[1][1] < 0 and verts[1][0] < 0:
-                thetaB = 180 + math.degrees(math.atan(verts[1][1] / verts[1][0]))
-            elif verts[1][1] < 0:
-                thetaB = 180 - math.degrees(math.atan(verts[1][1] / verts[1][0]))
-            else:
-                thetaB = math.degrees(math.atan(verts[1][1] / verts[1][0]))
-            thetaC = pPt2[0]
-            if verts[3][1] < 0 and verts[3][0] < 0:
-                thetaD = 180 + math.degrees(math.atan(verts[3][1] / verts[3][0]))
-            elif verts[3][1] < 0:
-                thetaD = 180 - math.degrees(math.atan(verts[3][1] / verts[3][0]))
-            else:
-                thetaD = math.degrees(math.atan(verts[3][1] / verts[3][0]))
+            thetaB = getAngle(verts[1])
+            thetaC = getAngle(verts[2])
+            thetaD = getAngle(verts[3])
 
             # print("thetas")
             # print(thetaA)
@@ -137,13 +145,15 @@ def ransac(lidar_points=None, color_sensor_pts=None, landmark_pts=None, impact_p
             # print(thetaC)
             # print(thetaD)
 
-            side = getDist(cPt1, cPt2)
-            error_dist = side * error
+            # side = getDist(cPt1, cPt2)
+            error_dist = sideLength * error
             score = 0
+
+            plt.plot(0,0,marker ='o', markersize=5, color="black")
             # print(len(lidar_points))
             for point in lidar_pts:
                 # print(point[0])
-                if thetaA <= point[0] <= thetaB or thetaA >= point[0] >= thetaB:
+                if angleInRange(thetaA, thetaB, point[0]):
                     # print("1")
                     if pPtOnLine(verts[0], verts[1], point, error_dist):
                         # print("here1")
@@ -151,7 +161,7 @@ def ransac(lidar_points=None, color_sensor_pts=None, landmark_pts=None, impact_p
                         score += point[2]
                     else:
                         plt.plot(point[1] * math.cos(math.radians(point[0])), point[1] * math.sin(math.radians(point[0])), marker='o', markersize=3, color="red")
-                elif thetaB <= point[0] <= thetaC or thetaB >= point[0] >= thetaC:
+                elif angleInRange(thetaB, thetaC, point[0]):
                     # print("2")
                     if pPtOnLine(verts[1], verts[2], point, error_dist):
                         plt.plot(point[1] * math.cos(math.radians(point[0])), point[1] * math.sin(math.radians(point[0])), marker='o', markersize=3, color="green")
@@ -159,7 +169,7 @@ def ransac(lidar_points=None, color_sensor_pts=None, landmark_pts=None, impact_p
                         # print("here2")
                     else:
                         plt.plot(point[1] * math.cos(math.radians(point[0])), point[1] * math.sin(math.radians(point[0])), marker='o', markersize=3, color="red")
-                elif thetaC <= point[0] <= thetaD or thetaC >= point[0] >= thetaD:
+                elif angleInRange(thetaC, thetaD, point[0]):
                     # print("3")
                     if pPtOnLine(verts[2], verts[3], point, error_dist):
                         plt.plot(point[1] * math.cos(math.radians(point[0])), point[1] * math.sin(math.radians(point[0])), marker='o', markersize=3, color="green")
@@ -176,13 +186,13 @@ def ransac(lidar_points=None, color_sensor_pts=None, landmark_pts=None, impact_p
                     else: plt.plot(point[1] * math.cos(math.radians(point[0])), point[1] * math.sin(math.radians(point[0])), marker='o', markersize=3, color="red")
 
                 if score >= percentOfPoints * totalPointsPossible:
-                    print(score)
+                    # print(score)
                     plt.plot((verts[0][0], verts[1][0], verts[2][0], verts[3][0], verts[0][0]), (verts[0][1], verts[1][1], verts[2][1], verts[3][1], verts[0][1]), color="blue")
                     plt.show()
                     return verts
-            plt.plot((verts[0][0], verts[1][0], verts[2][0], verts[3][0], verts[0][0]), (verts[0][1], verts[1][1], verts[2][1], verts[3][1], verts[0][1]), color="blue")
-            plt.show()
-            print(score)
+            # plt.plot((verts[0][0], verts[1][0], verts[2][0], verts[3][0], verts[0][0]), (verts[0][1], verts[1][1], verts[2][1], verts[3][1], verts[0][1]), color="blue")
+            # plt.show()
+            # print(score)
 
 
 
@@ -202,4 +212,5 @@ if __name__ == "__main__":
     # plt.show()
 
     print(ransac(lidar_pts))
-    # print(pPtOnLine((1,0), (0,-1), (315, .707, 15), .05))
+    # print(angleInRange(300, 87, 5))
+    # print(pPtOnLine((-3,-1), (-1,-2), (216.87, 2.44, 15), .05))
