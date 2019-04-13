@@ -2,6 +2,7 @@ import math
 import random
 import matplotlib.pyplot as plt
 from random_square import random_square
+import timeit
 
 def cartesianConvert(polarCord):
     out = []

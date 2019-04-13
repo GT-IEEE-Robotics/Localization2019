@@ -2,6 +2,8 @@ import math
 import random
 import matplotlib.pyplot as plt
 import numpy as np
+import timeit
+from new_square_draw import vertsToRobotLocation
 
 """
 lidar_pts = [(theta, distance, weighting)]
@@ -93,7 +95,7 @@ def pPtOnLine(cPt1, cPt2, pPtCheck, error_dist):
         return 0
 
 
-def ransac(lidar_points=None, color_sensor_pts=None, landmark_pts=None, impact_pts=None, error=0.05, sideLength=SQUARE_SIDE_LENGTH, percentOfPoints=.95, numIterations=100000):
+def ransac(lidar_points=None, color_sensor_pts=None, landmark_pts=None, impact_pts=None, error=0.02, sideLength=SQUARE_SIDE_LENGTH, percentOfPoints=.98, numIterations=100000):
     # landmark_pts = [(x, y, "camera", "pillar" or "internal wall" or "spacetels", color, how sure are that we saw it there)]
     # color_sensors_pts = [("colorsensr", color, weighting)]
     # impac_pts = ["impact_sensors"]
@@ -150,7 +152,7 @@ def ransac(lidar_points=None, color_sensor_pts=None, landmark_pts=None, impact_p
             score = 0
             maxCurrScore = 0
 
-            plt.plot(0,0,marker ='o', markersize=5, color="black")
+            # plt.plot(0,0,marker ='o', markersize=5, color="black")
             # print(len(lidar_points))
             for point in lidar_pts:
                 # print(point[0])
@@ -158,38 +160,39 @@ def ransac(lidar_points=None, color_sensor_pts=None, landmark_pts=None, impact_p
                     # print("1")
                     if pPtOnLine(verts[0], verts[1], point, error_dist):
                         # print("here1")
-                        plt.plot(point[1] * math.cos(math.radians(point[0])), point[1] * math.sin(math.radians(point[0])), marker='o', markersize=3, color="green")
+                        # plt.plot(point[1] * math.cos(math.radians(point[0])), point[1] * math.sin(math.radians(point[0])), marker='o', markersize=3, color="green")
                         score += point[2]
-                    else:
-                        plt.plot(point[1] * math.cos(math.radians(point[0])), point[1] * math.sin(math.radians(point[0])), marker='o', markersize=3, color="red")
+                    # else:
+                    #     plt.plot(point[1] * math.cos(math.radians(point[0])), point[1] * math.sin(math.radians(point[0])), marker='o', markersize=3, color="red")
                 elif angleInRange(thetaB, thetaC, point[0]):
                     # print("2")
                     if pPtOnLine(verts[1], verts[2], point, error_dist):
-                        plt.plot(point[1] * math.cos(math.radians(point[0])), point[1] * math.sin(math.radians(point[0])), marker='o', markersize=3, color="green")
+                        # plt.plot(point[1] * math.cos(math.radians(point[0])), point[1] * math.sin(math.radians(point[0])), marker='o', markersize=3, color="green")
                         score += point[2]
                         # print("here2")
-                    else:
-                        plt.plot(point[1] * math.cos(math.radians(point[0])), point[1] * math.sin(math.radians(point[0])), marker='o', markersize=3, color="red")
+                    # else:
+                    #     plt.plot(point[1] * math.cos(math.radians(point[0])), point[1] * math.sin(math.radians(point[0])), marker='o', markersize=3, color="red")
                 elif angleInRange(thetaC, thetaD, point[0]):
                     # print("3")
                     if pPtOnLine(verts[2], verts[3], point, error_dist):
-                        plt.plot(point[1] * math.cos(math.radians(point[0])), point[1] * math.sin(math.radians(point[0])), marker='o', markersize=3, color="green")
+                        # plt.plot(point[1] * math.cos(math.radians(point[0])), point[1] * math.sin(math.radians(point[0])), marker='o', markersize=3, color="green")
                         score += point[2]
                         # print("here3")
-                    else:
-                        plt.plot(point[1] * math.cos(math.radians(point[0])), point[1] * math.sin(math.radians(point[0])), marker='o', markersize=3, color="red")
+                    # else:
+                    #     plt.plot(point[1] * math.cos(math.radians(point[0])), point[1] * math.sin(math.radians(point[0])), marker='o', markersize=3, color="red")
                 else:
                     # print("4")
                     if pPtOnLine(verts[0], verts[3], point, error_dist):
-                        plt.plot(point[1] * math.cos(math.radians(point[0])), point[1] * math.sin(math.radians(point[0])), marker='o', markersize=3, color="green")
+                        # plt.plot(point[1] * math.cos(math.radians(point[0])), point[1] * math.sin(math.radians(point[0])), marker='o', markersize=3, color="green")
                         score += point[2]
                         # print("here4")
-                    else: plt.plot(point[1] * math.cos(math.radians(point[0])), point[1] * math.sin(math.radians(point[0])), marker='o', markersize=3, color="red")
+                    # else:
+                    #     plt.plot(point[1] * math.cos(math.radians(point[0])), point[1] * math.sin(math.radians(point[0])), marker='o', markersize=3, color="red")
 
                 if score >= percentOfPoints * totalPointsPossible:
                     # print(score)
-                    plt.plot((verts[0][0], verts[1][0], verts[2][0], verts[3][0], verts[0][0]), (verts[0][1], verts[1][1], verts[2][1], verts[3][1], verts[0][1]), color="blue")
-                    plt.show()
+                    # plt.plot((verts[0][0], verts[1][0], verts[2][0], verts[3][0], verts[0][0]), (verts[0][1], verts[1][1], verts[2][1], verts[3][1], verts[0][1]), color="blue")
+                    # plt.show()
                     return verts
 
                 maxCurrScore += point[2]
@@ -217,6 +220,16 @@ if __name__ == "__main__":
     #     plt.plot(pt[0],pt[1], marker='o', markersize=3, color="red")
     # plt.show()
 
-    print(ransac(lidar_pts))
+    start = timeit.default_timer()
+
+    # print(ransac(lidar_pts))
+
+    verts = ransac(lidar_pts)
+    print(verts)
+    print(vertsToRobotLocation(verts))
+
+    stop = timeit.default_timer()
+
+    print('Time: ', stop - start)
     # print(angleInRange(300, 87, 5))
     # print(pPtOnLine((-3,-1), (-1,-2), (216.87, 2.44, 15), .05))
